@@ -1,0 +1,94 @@
+{
+  "modulesContent": {
+    "$edgeAgent": {
+      "properties.desired": {
+        "schemaVersion": "1.0",
+        "runtime": {
+          "type": "docker",
+          "settings": {
+            "minDockerVersion": "v1.25",
+            "loggingOptions": "",
+            "registryCredentials": {
+              "edgendaiotedgeacr": {
+                "username": "",
+                "password": "",
+                "address": "edgendaiotedgeacr.azurecr.io"
+              }
+            }
+          }
+        },
+        "systemModules": {
+          "edgeAgent": {
+            "type": "docker",
+            "settings": {
+              "image": "mcr.microsoft.com/azureiotedge-agent:1.0",
+              "createOptions": "{}"
+            }
+          },
+          "edgeHub": {
+            "type": "docker",
+            "status": "running",
+            "restartPolicy": "always",
+            "settings": {
+              "image": "mcr.microsoft.com/azureiotedge-hub:1.0",
+              "createOptions": "{\"HostConfig\":{\"PortBindings\":{\"5671/tcp\":[{\"HostPort\":\"5671\"}],\"8883/tcp\":[{\"HostPort\":\"8883\"}],\"443/tcp\":[{\"HostPort\":\"443\"}]}}}"
+            }
+          }
+        },
+        "modules": {
+          "EdgendaAzureIotEdgeModule": {
+            "version": "1.0.0",
+            "type": "docker",
+            "status": "running",
+            "restartPolicy": "always",
+            "settings": {
+              "image": "${MODULEDIR<../Edgenda.AzureIot.Edge.RootModule>}",
+              "createOptions": "{}"
+            }
+          },
+          "CameraEdgeModule241": {
+            "version": "1.0.0",
+            "type": "docker",
+            "status": "running",
+            "restartPolicy": "always",
+            "settings": {
+              "image": "${MODULEDIR<../Edgenda.AzureIoT.Edge.CameraModule>}",
+              "createOptions": "{}"
+            }
+          },
+          "CameraEdgeModule147": {
+            "version": "1.0.0",
+            "type": "docker",
+            "status": "running",
+            "restartPolicy": "always",
+            "settings": {
+              "image": "${MODULEDIR<../Edgenda.AzureIoT.Edge.CameraModule>}",
+              "createOptions": "{}"
+            }
+          }
+        }
+      }
+    },
+    "CameraEdgeModule147": {
+      "properties.desired": {
+        "ServerHostName": "localhost",
+        "ServerBasePort": 15000,
+        "DeviceLongitude": -73.61579,
+        "DeviceLatitude": 45.46438
+      }
+    },
+    "$edgeHub": {
+      "properties.desired": {
+        "schemaVersion": "1.0",
+        "routes": {
+          "EdgendaAzureIotEdgeModuleToIoTHub": "FROM /messages/modules/EdgendaAzureIotEdgeModule/outputs/* INTO $upstream",
+          "CameraEdgeModule241ToEdgeHub": "FROM /messages/modules/CameraEdgeModule241/outputs/* INTO BrokeredEndpoint(\"/modules/EdgendaAzureIotEdgeModule/inputs/cameras\")",
+          "CameraEdgeModule148ToEdgeHub": "FROM /messages/modules/CameraEdgeModule147/outputs/* INTO BrokeredEndpoint(\"/modules/EdgendaAzureIotEdgeModule/inputs/cameras\")"
+        },
+        "storeAndForwardConfiguration": {
+          "timeToLiveSecs": 7200
+        }
+      }
+    }
+  }
+}

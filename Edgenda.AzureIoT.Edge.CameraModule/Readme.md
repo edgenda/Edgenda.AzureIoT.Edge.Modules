@@ -1,0 +1,1 @@
+# Edgenda.AzureIoT.CameraEdgeModule
