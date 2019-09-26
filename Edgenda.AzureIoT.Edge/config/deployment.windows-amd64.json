@@ -42,7 +42,7 @@
             "status": "running",
             "restartPolicy": "always",
             "settings": {
-              "image": "${MODULEDIR<../Edgenda.AzureIot.Edge.RootModule>}",
+              "image": "edgendaiotedgeacr.azurecr.io/edgendaazureiotedgemodule:0.0.2-windows-amd64",
               "createOptions": "{}"
             }
           },
@@ -52,29 +52,11 @@
             "status": "running",
             "restartPolicy": "always",
             "settings": {
-              "image": "${MODULEDIR<../Edgenda.AzureIoT.Edge.CameraModule>}",
-              "createOptions": "{}"
-            }
-          },
-          "CameraEdgeModule147": {
-            "version": "1.0.0",
-            "type": "docker",
-            "status": "running",
-            "restartPolicy": "always",
-            "settings": {
-              "image": "${MODULEDIR<../Edgenda.AzureIoT.Edge.CameraModule>}",
+              "image": "edgendaiotedgeacr.azurecr.io/edgenda.azureiot.edge.cameramodule:0.0.9-windows-amd64",
               "createOptions": "{}"
             }
           }
         }
-      }
-    },
-    "CameraEdgeModule147": {
-      "properties.desired": {
-        "ServerHostName": "localhost",
-        "ServerBasePort": 15000,
-        "DeviceLongitude": -73.61579,
-        "DeviceLatitude": 45.46438
       }
     },
     "$edgeHub": {
@@ -82,8 +64,7 @@
         "schemaVersion": "1.0",
         "routes": {
           "EdgendaAzureIotEdgeModuleToIoTHub": "FROM /messages/modules/EdgendaAzureIotEdgeModule/outputs/* INTO $upstream",
-          "CameraEdgeModule241ToEdgeHub": "FROM /messages/modules/CameraEdgeModule241/outputs/* INTO BrokeredEndpoint(\"/modules/EdgendaAzureIotEdgeModule/inputs/cameras\")",
-          "CameraEdgeModule148ToEdgeHub": "FROM /messages/modules/CameraEdgeModule147/outputs/* INTO BrokeredEndpoint(\"/modules/EdgendaAzureIotEdgeModule/inputs/cameras\")"
+          "CameraEdgeModule241ToEdgeHub": "FROM /messages/modules/CameraEdgeModule241/outputs/* INTO BrokeredEndpoint(\"/modules/EdgendaAzureIotEdgeModule/inputs/cameras\")"
         },
         "storeAndForwardConfiguration": {
           "timeToLiveSecs": 7200

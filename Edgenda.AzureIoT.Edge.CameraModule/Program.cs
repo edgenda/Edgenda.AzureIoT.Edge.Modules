@@ -2,6 +2,7 @@ namespace Edgenda.AzureIoT.Edge.CameraModule
 {
     using System;
     using System.IO;
+    using System.Linq;
     using System.Net;
     using System.Runtime.InteropServices;
     using System.Runtime.Loader;
@@ -81,24 +82,26 @@ namespace Edgenda.AzureIoT.Edge.CameraModule
             Console.WriteLine("Received capture method call");
             try
             {
-                var response = new MethodResponse((int)HttpStatusCode.OK);
                 var client = new CameraServerClient(desiredPropertiesData.ServerHostname, desiredPropertiesData.ServerBasePort);
                 var data = client.GetCameraProperties(desiredPropertiesData.DeviceLongitude, desiredPropertiesData.DeviceLatitude);
-                return Task.FromResult(response);
+                Console.WriteLine($"Received camera data {JsonConvert.SerializeObject(data)}");
+                if (data != null && data.Length > 0)
+                {
+                    Console.WriteLine("Calling image detection api");
+                    var carIdService = new CarIdentificationServiceClient(desiredPropertiesData.CarDetectionServerHostname, desiredPropertiesData.CarDetectionServerBasePort);
+                    var camData = new ExtendedCameraProperties(data.First());
+                    camData.Predictions = carIdService.GetPredictions(Convert.FromBase64String(camData.ImageData), camData.LiveImageUrl);
+                    Console.WriteLine($"Got Predictions {JsonConvert.SerializeObject(camData.Predictions)}");
+                    var response = new MethodResponse(Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(camData)), (int)HttpStatusCode.OK);
+                    return Task.FromResult(response);
+                }
+                return Task.FromResult(new MethodResponse((int)HttpStatusCode.NotFound));
             }
             catch(Exception error)
             {
                 Console.Error.WriteLine(error);
                 throw;
             }
-        }
-
-        private static Task<MethodResponse> ResetMethod(MethodRequest request, object userContext)
-        {
-            var response = new MethodResponse((int)HttpStatusCode.OK);
-            Console.WriteLine("Received reset command via direct method invocation");
-            Console.WriteLine("Resetting temperature sensor...");
-            return Task.FromResult(response);
         }
 
         private static Task<MessageResponse> ControlMessageHandler(Message message, object userContext)
