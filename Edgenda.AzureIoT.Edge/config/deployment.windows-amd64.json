@@ -42,7 +42,7 @@
             "status": "running",
             "restartPolicy": "always",
             "settings": {
-              "image": "edgendaiotedgeacr.azurecr.io/edgendaazureiotedgemodule:0.0.2-windows-amd64",
+              "image": "edgendaiotedgeacr.azurecr.io/edgendaazureiotedgemodule:0.0.5-windows-amd64",
               "createOptions": "{}"
             }
           },
@@ -52,7 +52,7 @@
             "status": "running",
             "restartPolicy": "always",
             "settings": {
-              "image": "edgendaiotedgeacr.azurecr.io/edgenda.azureiot.edge.cameramodule:0.0.9-windows-amd64",
+              "image": "edgendaiotedgeacr.azurecr.io/edgenda.azureiot.edge.cameramodule:0.0.10-windows-amd64",
               "createOptions": "{}"
             }
           }

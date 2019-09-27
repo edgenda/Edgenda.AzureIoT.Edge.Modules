@@ -17,7 +17,6 @@ namespace Edgenda.AzureIoT.Edge.CameraModule
 
     class Program
     {
-        static int counter;
         private static volatile DesiredPropertiesData desiredPropertiesData;
 
         static void Main(string[] args)
@@ -60,16 +59,11 @@ namespace Edgenda.AzureIoT.Edge.CameraModule
             Console.WriteLine("Got Device Twin configuration.");
             desiredPropertiesData = new DesiredPropertiesData(moduleTwinCollection);
 
-            // Register callback to be called when a message is received by the module
-            await ioTHubModuleClient.SetInputMessageHandlerAsync("input1", PipeMessage, ioTHubModuleClient);
-
             // callback for updating desired properties through the portal or rest api
             await ioTHubModuleClient.SetDesiredPropertyUpdateCallbackAsync(OnDesiredPropertiesUpdate, null);
 
-            await ioTHubModuleClient.SetMethodHandlerAsync("capture", CaptureMethod, null);
+            await ioTHubModuleClient.SetMethodHandlerAsync("capture", CaptureMethod, ioTHubModuleClient);
 
-            // we don't pass ioTHubModuleClient as we're not sending any messages out to the message bus
-            await ioTHubModuleClient.SetInputMessageHandlerAsync("control", ControlMessageHandler, null);
         }
         private static Task OnDesiredPropertiesUpdate(TwinCollection twinCollection, object userContext)
         {
@@ -77,7 +71,7 @@ namespace Edgenda.AzureIoT.Edge.CameraModule
             return Task.CompletedTask;
         }
 
-        private static Task<MethodResponse> CaptureMethod(MethodRequest request, object userContext)
+        private async static Task<MethodResponse> CaptureMethod(MethodRequest request, object userContext)
         {
             Console.WriteLine("Received capture method call");
             try
@@ -91,67 +85,25 @@ namespace Edgenda.AzureIoT.Edge.CameraModule
                     var carIdService = new CarIdentificationServiceClient(desiredPropertiesData.CarDetectionServerHostname, desiredPropertiesData.CarDetectionServerBasePort);
                     var camData = new ExtendedCameraProperties(data.First());
                     camData.Predictions = carIdService.GetPredictions(Convert.FromBase64String(camData.ImageData), camData.LiveImageUrl);
-                    Console.WriteLine($"Got Predictions {JsonConvert.SerializeObject(camData.Predictions)}");
-                    var response = new MethodResponse(Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(camData)), (int)HttpStatusCode.OK);
-                    return Task.FromResult(response);
+                    var serializedCamData = JsonConvert.SerializeObject(camData);
+                    var camDataAsBytes = Encoding.UTF8.GetBytes(serializedCamData);
+                    var response = new MethodResponse(camDataAsBytes, (int)HttpStatusCode.OK);
+
+                    var message = new Message(camDataAsBytes);
+                    message.ContentEncoding = "utf-8";
+                    message.ContentType = "application/json";
+                    var deviceClient = userContext as ModuleClient;
+                    await deviceClient.SendEventAsync("outputs", message);
+
+                    return response;
                 }
-                return Task.FromResult(new MethodResponse((int)HttpStatusCode.NotFound));
+                return new MethodResponse((int)HttpStatusCode.NotFound);
             }
             catch(Exception error)
             {
                 Console.Error.WriteLine(error);
                 throw;
             }
-        }
-
-        private static Task<MessageResponse> ControlMessageHandler(Message message, object userContext)
-        {
-            var messageBytes = message.GetBytes();
-            var messageString = Encoding.UTF8.GetString(messageBytes);
-            try
-            {
-                var messages = JsonConvert.DeserializeObject<ControlCommand[]>(messageString);
-                foreach (ControlCommand messageBody in messages)
-                {
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Failed to deserialize control command with exception: [{ex.Message}]");
-            }
-            return Task.FromResult(MessageResponse.Completed);
-        }
-
-        /// <summary>
-        /// This method is called whenever the module is sent a message from the EdgeHub. 
-        /// It just pipe the messages without any change.
-        /// It prints all the incoming messages.
-        /// </summary>
-        static async Task<MessageResponse> PipeMessage(Message message, object userContext)
-        {
-            int counterValue = Interlocked.Increment(ref counter);
-
-            var moduleClient = userContext as ModuleClient;
-            if (moduleClient == null)
-            {
-                throw new InvalidOperationException("UserContext doesn't contain " + "expected values");
-            }
-
-            byte[] messageBytes = message.GetBytes();
-            string messageString = Encoding.UTF8.GetString(messageBytes);
-            Console.WriteLine($"Received message: {counterValue}, Body: [{messageString}]");
-
-            if (!string.IsNullOrEmpty(messageString))
-            {
-                var pipeMessage = new Message(messageBytes);
-                foreach (var prop in message.Properties)
-                {
-                    pipeMessage.Properties.Add(prop.Key, prop.Value);
-                }
-                await moduleClient.SendEventAsync("output1", pipeMessage);
-                Console.WriteLine("Received message sent");
-            }
-            return MessageResponse.Completed;
         }
     }
 }
